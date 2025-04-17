@@ -49,6 +49,16 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if task.Title == "" {
+		writeJSON(w, map[string]string{"error": "Не указан заголовок задачи"})
+		return
+	}
+
+	if err := checkDate(&task); err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+
 	if err := db.UpdateTask(&task); err != nil {
 		writeJSON(w, map[string]string{"error": err.Error()})
 		return
