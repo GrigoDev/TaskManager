@@ -17,14 +17,15 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		deleteTaskHandler(w, r)
 	default:
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		writeJSON(w, map[string]string{"error": "Не указан идентификатор"})
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, map[string]string{"error": "id is required"})
 		return
 	}
 
@@ -40,7 +41,8 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeJSON(w, map[string]string{"error": "Неверный формат данных"})
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, map[string]string{"error": "invalid data format"})
 		return
 	}
 
@@ -50,7 +52,8 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if task.Title == "" {
-		writeJSON(w, map[string]string{"error": "Не указан заголовок задачи"})
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, map[string]string{"error": "task title is required"})
 		return
 	}
 

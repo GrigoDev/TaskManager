@@ -13,7 +13,7 @@ import (
 const dateFormat = "20060102"
 
 // ErrAmbiguous возвращается, если правило "m" дает неоднозначный результат.
-var ErrAmbiguous = errors.New("не удалось найти однозначную дату по правилу m")
+var ErrAmbiguous = errors.New("could not find unambiguous date for rule m")
 
 // afterNow возвращает true, если date находится после now.
 func afterNow(date, now time.Time) bool {
@@ -129,7 +129,7 @@ func nextDateM(threshold time.Time, allowedDays []int, allowedMonths []int) (tim
 			}
 		}
 	}
-	return time.Time{}, errors.New("не удалось найти следующую подходящую дату по правилу m")
+	return time.Time{}, errors.New("could not find next suitable date for rule m")
 }
 
 // NextDate вычисляет следующую дату по правилу repeat для правил "d", "y", "w" и "m".
@@ -137,27 +137,27 @@ func nextDateM(threshold time.Time, allowedDays []int, allowedMonths []int) (tim
 func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 	startDate, err := time.Parse(dateFormat, dstart)
 	if err != nil {
-		return "", fmt.Errorf("не удается преобразовать dstart: %v", err)
+		return "", fmt.Errorf("could not parse dstart: %v", err)
 	}
 
 	repeat = strings.TrimSpace(repeat)
 	if repeat == "" {
-		return "", errors.New("пустое правило повторения")
+		return "", errors.New("empty repeat rule")
 	}
 
 	parts := strings.Fields(repeat)
 	if len(parts) == 0 {
-		return "", errors.New("неправильный формат repeat")
+		return "", errors.New("invalid repeat format")
 	}
 
 	switch parts[0] {
 	case "d":
 		if len(parts) != 2 {
-			return "", errors.New("не указан интервал для d")
+			return "", errors.New("interval not specified for d")
 		}
 		days, err := strconv.Atoi(parts[1])
 		if err != nil || days <= 0 || days > 400 {
-			return "", errors.New("неверный интервал для d, должно быть от 1 до 400")
+			return "", errors.New("invalid interval for d, must be between 1 and 400")
 		}
 		candidate := startDate
 		for i := 0; i < 1000; i++ {
@@ -176,14 +176,14 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		}
 	case "w":
 		if len(parts) != 2 {
-			return "", errors.New("не указан список дней недели для w")
+			return "", errors.New("week days not specified for w")
 		}
 		daysOfWeek := strings.Split(parts[1], ",")
 		var validDays [8]bool
 		for _, ds := range daysOfWeek {
 			dayInt, err := strconv.Atoi(ds)
 			if err != nil || dayInt < 1 || dayInt > 7 {
-				return "", errors.New("неверный день недели в w, должно быть от 1 до 7")
+				return "", errors.New("invalid week day in w, must be between 1 and 7")
 			}
 			validDays[dayInt] = true
 		}
@@ -201,14 +201,14 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 	case "m":
 		// Ожидается хотя бы список дней.
 		if len(parts) < 2 {
-			return "", errors.New("не указан список дней месяца для m")
+			return "", errors.New("month days not specified for m")
 		}
 		dayParts := strings.Split(parts[1], ",")
 		var allowedDays []int
 		for _, s := range dayParts {
 			v, err := strconv.Atoi(s)
 			if err != nil || v == 0 || v > 31 || v < -31 {
-				return "", errors.New("неверный день месяца в m, должно быть от 1 до 31 или -1 до -31")
+				return "", errors.New("invalid month day in m, must be between 1 and 31 or -1 and -31")
 			}
 			allowedDays = append(allowedDays, v)
 		}
@@ -218,7 +218,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			for _, s := range monthParts {
 				m, err := strconv.Atoi(s)
 				if err != nil || m < 1 || m > 12 {
-					return "", errors.New("неверный месяц в m, должно быть от 1 до 12")
+					return "", errors.New("invalid month in m, must be between 1 and 12")
 				}
 				allowedMonths = append(allowedMonths, m)
 			}
@@ -238,9 +238,9 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		}
 		return res.Format(dateFormat), nil
 	default:
-		return "", errors.New("неправильный формат повторения")
+		return "", errors.New("invalid repeat format")
 	}
-	return "", errors.New("не удалось найти следующую подходящую дату за разумное число итераций")
+	return "", errors.New("could not find next suitable date after reasonable number of iterations")
 }
 
 // nextDayHandler обрабатывает HTTP-запрос для вычисления следующей даты.
@@ -256,13 +256,13 @@ func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		now, err = time.Parse(dateFormat, nowStr)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Неверный формат даты now: %v", err), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("invalid date format for now: %v", err), http.StatusBadRequest)
 			return
 		}
 	}
 
 	if dateStr == "" {
-		http.Error(w, "Параметр date обязателен", http.StatusBadRequest)
+		http.Error(w, "date parameter is required", http.StatusBadRequest)
 		return
 	}
 
@@ -270,12 +270,13 @@ func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 	// Если ошибка связана с неоднозначностью – возвращаем пустой ответ.
 	if err != nil {
 		if errors.Is(err, ErrAmbiguous) {
+			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-Type", "text/plain")
 			w.Write([]byte(""))
 			return
 		}
-		log.Printf("Ошибка при вычислении следующей даты: %v", err)
-		http.Error(w, fmt.Sprintf("Ошибка при вычислении следующей даты: %v", err), http.StatusBadRequest)
+		log.Printf("error calculating next date: %v", err)
+		http.Error(w, fmt.Sprintf("error calculating next date: %v", err), http.StatusBadRequest)
 		return
 	}
 

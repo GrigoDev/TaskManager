@@ -33,13 +33,13 @@ func Init() error {
 
 	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
-		return fmt.Errorf("Ошибка открытия БД: %w", err)
+		return fmt.Errorf("error opening database: %w", err)
 	}
 
 	if install {
 		if _, err := db.Exec(schema); err != nil {
 			db.Close()
-			return fmt.Errorf("Ошибка создания таблицы: %w", err)
+			return fmt.Errorf("error creating table: %w", err)
 		}
 	}
 

@@ -84,7 +84,7 @@ func GetTask(id string) (*Task, error) {
 	err := db.QueryRow(query, id).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("Задача не найдена")
+			return nil, fmt.Errorf("task not found")
 		}
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func UpdateTask(task *Task) error {
 	}
 
 	if count == 0 {
-		return fmt.Errorf("Задача не найдена")
+		return fmt.Errorf("task not found")
 	}
 
 	return nil
@@ -123,7 +123,7 @@ func DeleteTask(id string) error {
 	}
 
 	if count == 0 {
-		return fmt.Errorf("Задача не найдена")
+		return fmt.Errorf("task not found")
 	}
 
 	return nil
@@ -142,7 +142,7 @@ func UpdateDate(next string, id string) error {
 	}
 
 	if count == 0 {
-		return fmt.Errorf("Задача не найдена")
+		return fmt.Errorf("task not found")
 	}
 
 	return nil

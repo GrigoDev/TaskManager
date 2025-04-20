@@ -8,7 +8,7 @@ import (
 
 func main() {
 	if err := db.Init(); err != nil {
-		log.Fatalf("Ошибка инициализации БД: %v", err)
+		log.Fatalf("error initializing database: %v", err)
 	}
 	defer db.DB.Close()
 
